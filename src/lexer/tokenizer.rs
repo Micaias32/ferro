@@ -32,7 +32,9 @@ impl Tokenizer {
 
         use super::TokenKind as T;
         let tok = match char {
-            c if c.is_whitespace() => self.whitespace()?,
+            c if c.is_whitespace() => self.whitespace(),
+            c if c.is_alphabetic() => self.ident(),
+            c if c.is_ascii_digit() => self.number(),
             ';' => T::Semi,
             ',' => T::Comma,
             '.' => T::Dot,
@@ -64,5 +66,92 @@ impl Tokenizer {
         };
         self.position += 1;
         Some(Token::new(tok, self.position - start))
+    }
+
+    fn whitespace(&mut self) -> TokenKind {
+        loop {
+            let c = self.src[self.position];
+
+            if c.is_whitespace() {
+                self.position += 1;
+            } else {
+                self.position -= 1;
+                return TokenKind::Whitespace;
+            }
+        }
+    }
+
+    fn ident(&mut self) -> TokenKind {
+        // All call sites should only call if the character right now is alphabetic.
+        // This is here only for sanity reasons
+        debug_assert!(self.src[self.position].is_alphabetic());
+
+        loop {
+            let c = self.src[self.position];
+
+            if c.is_alphabetic() || c.is_ascii_digit() {
+                self.position += 1;
+            } else {
+                self.position -= 1;
+                return TokenKind::Ident;
+            }
+        }
+    }
+
+    fn number(&mut self) -> TokenKind {
+        loop {
+            let c = self.src[self.position];
+
+            if c.is_ascii_digit() {
+                self.position += 1;
+            } else {
+                self.position -= 1;
+                return TokenKind::Literal {
+                    kind: super::LiteralKind::NumberLiteral,
+                };
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::lexer::LiteralKind;
+
+    use super::*;
+    #[test]
+    fn simple_tokenizing() {
+        let code = "a <- 1 + 1;";
+        let mut tokenizer = Tokenizer::new(code);
+
+        let tokens = tokenizer.tokenize();
+
+        assert_eq!(
+            tokens,
+            vec![
+                Token::new(TokenKind::Ident, 1),
+                Token::new(TokenKind::Whitespace, 1),
+                Token::new(TokenKind::LessThan, 1),
+                Token::new(TokenKind::Minus, 1),
+                Token::new(TokenKind::Whitespace, 1),
+                Token::new(
+                    TokenKind::Literal {
+                        kind: LiteralKind::NumberLiteral
+                    },
+                    1
+                ),
+                Token::new(TokenKind::Whitespace, 1),
+                Token::new(TokenKind::Plus, 1),
+                Token::new(TokenKind::Whitespace, 1),
+                Token::new(
+                    TokenKind::Literal {
+                        kind: LiteralKind::NumberLiteral
+                    },
+                    1
+                ),
+                Token::new(TokenKind::Semi, 1),
+                Token::new(TokenKind::Eof, 0)
+            ]
+        );
     }
 }

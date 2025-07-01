@@ -1,12 +1,14 @@
 pub mod tokenizer;
 
 /// A token is just its kind and its length
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     kind: TokenKind,
     len: usize,
 }
 
 /// We have all kinds of tokens here
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     /// // comment?
     LineComment,
@@ -23,7 +25,8 @@ pub enum TokenKind {
     /// Literals?
     Literal {
         kind: LiteralKind,
-        suffix_start: u32,
+        // No suffix for now
+        // suffix_start: u32,
     },
 
     /// ;
@@ -111,6 +114,7 @@ pub enum TokenKind {
     Eof,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LiteralKind {
     NumberLiteral,
 }
